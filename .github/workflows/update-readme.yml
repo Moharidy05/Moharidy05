@@ -1,0 +1,34 @@
+name: Refresh Profile README & Purge Cache
+
+on:
+  schedule:
+    # Runs every night at midnight UTC
+    - cron: '0 0 * * *'
+  workflow_dispatch: # Allows manual one-click trigger from the Actions tab
+
+permissions:
+  contents: write
+
+jobs:
+  refresh-cache:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Purge GitHub Camo Cache for Readme Images
+        run: |
+          echo "Purging Camo cache to ensure stats remain updated..."
+          # Hits GitHub's camo proxy for the stats URLs to force refresh
+          curl -s -X PURGE "https://github-readme-stats.vercel.app/api?username=Moharidy05&show_icons=true&theme=tokyonight&hide_border=true&count_private=true" || true
+          curl -s -X PURGE "https://github-readme-stats.vercel.app/api/top-langs/?username=Moharidy05&layout=compact&theme=tokyonight&hide_border=true" || true
+          curl -s -X PURGE "https://github-readme-streak-stats.herokuapp.com/?user=Moharidy05&theme=tokyonight&hide_border=true" || true
+
+      - name: Keepalive Commit
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          echo "Last keepalive run: $(date -u)" > .github/keepalive.txt
+          git add .github/keepalive.txt
+          git commit -m "chore: keepalive cron [skip ci]" || exit 0
+          git push
